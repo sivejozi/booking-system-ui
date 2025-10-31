@@ -1,56 +1,62 @@
-import { Component } from 'react';
-import {
-    DataGrid,
+import React from "react";
+import DataGrid, {
     Column,
+    Editing,
     Paging,
-    Pager,
-    Editing
+    Pager
 } from "devextreme-react/data-grid";
-import './bookings.css';
-import "devextreme/dist/css/dx.light.css";
+import { Button } from "devextreme-react/button";
 
-export default class Bookings extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            appointments: [],
-            loading: true,
-            error: null
-        };
-    }
+export default class Bookings extends React.Component {
+    state = {
+        appointments: [],
+        loading: true,
+        error: null,
+        loggedIn: true
+    };
 
     componentDidMount() {
-        this.fetchAppointments();
-    }
-
-    fetchAppointments = () => {
         const token = localStorage.getItem("token");
+        if (!token) {
+            this.setState({ loggedIn: false });
+            return;
+        }
 
         fetch("http://localhost:8082/booking/api/appointments", {
-            method: "GET",
             headers: {
-                "Content-Type": "application/json",
-                Authorization: "Bearer " + token
+                "Authorization": "Bearer " + token
             }
         })
-            .then((response) => {
-                if (!response.ok) throw new Error(response.status);
-                return response.json();
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to fetch appointments");
+                return res.json();
             })
             .then((data) => {
+                console.log("Fetched appointments:", data);
                 this.setState({ appointments: data, loading: false });
             })
-            .catch((error) => {
-                console.error("Failed to load appointments:", error);
-                this.setState({ error: "Failed to fetch appointments", loading: false });
-            });
+            .catch((err) =>
+                this.setState({ error: err.message, loading: false })
+            );
+    }
+
+    handleLogout = () => {
+        localStorage.removeItem("token");
+        this.setState({ loggedIn: false });
+        alert("Logged out successfully!");
+        window.location.href = "/login"; // redirect to your login page
     };
 
     handleRowUpdate = (e) => {
         const token = localStorage.getItem("token");
         const updated = { ...e.oldData, ...e.newData };
+        console.log("Updating appointment:", updated);
 
-        return fetch(`http://localhost:8082/booking/api/appointments/${updated.id}`, {
+        const url =
+            "http://localhost:8082/booking/api/appointments/update/" +
+            updated.id;
+
+        return fetch(url, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -78,12 +84,15 @@ export default class Bookings extends Component {
     handleRowRemove = (e) => {
         const token = localStorage.getItem("token");
 
-        return fetch(`http://localhost:8082/booking/api/appointments/${e.data.id}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": "Bearer " + token
+        return fetch(
+            `http://localhost:8082/booking/api/appointments/${e.data.id}`,
+            {
+                method: "DELETE",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
             }
-        })
+        )
             .then((response) => {
                 if (!response.ok) throw new Error(response.status);
                 this.setState((prev) => ({
@@ -99,22 +108,40 @@ export default class Bookings extends Component {
     };
 
     render() {
-        const { appointments, loading, error } = this.state;
+        const { appointments, loading, error, loggedIn } = this.state;
 
+        if (!loggedIn) return <div>You have been logged out.</div>;
         if (loading) return <div>Loading booked appointments...</div>;
         if (error) return <div style={{ color: "red" }}>{error}</div>;
 
         return (
             <div style={{ margin: "30px" }}>
-                <h2>Booked Appointments</h2>
+                {/* Header bar */}
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "20px"
+                    }}
+                >
+                    <h2>Booked Appointments</h2>
+                    <Button
+                        text="Logout"
+                        type="danger"
+                        stylingMode="contained"
+                        onClick={this.handleLogout}
+                    />
+                </div>
+
                 <DataGrid
                     dataSource={appointments}
                     keyExpr="id"
                     showBorders={true}
                     columnAutoWidth={true}
                     hoverStateEnabled={true}
-                    onRowUpdated={this.handleRowUpdate}
-                    onRowRemoved={this.handleRowRemove}
+                    onRowUpdating={this.handleRowUpdate}
+                    onRowRemoving={this.handleRowRemove}
                 >
                     <Editing
                         mode="popup"
@@ -124,7 +151,7 @@ export default class Bookings extends Component {
                             title: "Edit Appointment",
                             showTitle: true,
                             width: 600,
-                            height: 450,
+                            height: 450
                         }}
                         form={{
                             colCount: 2,
@@ -136,20 +163,44 @@ export default class Bookings extends Component {
                                 {
                                     dataField: "appointmentDateTime",
                                     editorType: "dxDateBox",
-                                    editorOptions: { type: "datetime" },
+                                    editorOptions: { type: "datetime" }
                                 },
-                                "reason"
+                                "reason",
+                                {
+                                    dataField: "status",
+                                    editorType: "dxSelectBox",
+                                    editorOptions: {
+                                        items: [
+                                            "CONFIRMED",
+                                            "CANCELLED",
+                                            "SCHEDULED",
+                                            "COMPLETED"
+                                        ],
+                                        value: "CONFIRMED"
+                                    }
+                                }
                             ]
                         }}
                     />
 
                     <Column dataField="id" caption="ID" width={70} allowEditing={false} />
+                    <Column dataField="branch" caption="Branch" />
                     <Column dataField="customerName" caption="Customer" />
                     <Column dataField="customerEmail" caption="Email" />
                     <Column dataField="customerPhone" caption="Phone" />
-                    <Column dataField="branch" caption="Branch" />
-                    <Column dataField="appointmentDateTime" caption="Date & Time" dataType="datetime" />
+                    <Column
+                        dataField="appointmentDateTime"
+                        caption="Date & Time"
+                        dataType="datetime"
+                    />
                     <Column dataField="reason" caption="Reason" />
+                    <Column
+                        dataField="status"
+                        caption="Status"
+                        lookup={{
+                            dataSource: ["CONFIRMED", "CANCELLED", "SCHEDULED", "COMPLETED"]
+                        }}
+                    />
 
                     <Paging defaultPageSize={10} />
                     <Pager

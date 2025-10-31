@@ -7,10 +7,15 @@
 
 .form-container {
   background-color: #fff;
-  padding: 40px;
+  padding: 50px;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  width: 420px;
+  width: 500px;
+}
+
+.form-control{
+  width: 220px;
+  padding: 5px
 }
 
 h3 {

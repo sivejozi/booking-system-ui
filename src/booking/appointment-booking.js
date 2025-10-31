@@ -71,6 +71,17 @@ export default class BookingForm extends Component {
 
           <Form colCount={1}>
             <GroupItem>
+              <SimpleItem dataField="Branch" isRequired>
+                <RequiredRule message="Branch is required" />
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Branch"
+                  value={this.state.bookingData.branch}
+                  onChange={(e) => this.handleChange({ value: e.target.value }, 'branch')}
+                />
+              </SimpleItem>
+
               <SimpleItem dataField="Customer Name" isRequired>
                 <RequiredRule message="Customer name is required" />
                 <input
@@ -104,24 +115,13 @@ export default class BookingForm extends Component {
                 />
               </SimpleItem>
 
-              <SimpleItem dataField="Branch" isRequired>
-                <RequiredRule message="Branch is required" />
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Branch"
-                  value={this.state.bookingData.branch}
-                  onChange={(e) => this.handleChange({ value: e.target.value }, 'branch')}
-                />
-              </SimpleItem>
-
-              <SimpleItem dataField="Appointment Date" editorType="dxDateBox" isRequired>
+              <SimpleItem dataField="Appointment Date Time" editorType="dxDateBox" isRequired>
                 <RequiredRule message="Appointment date is required" />
                 <input
                   type="datetime-local"
                   className="form-control"
-                  value={this.state.bookingData.appointmentDate || ''}
-                  onChange={(e) => this.handleChange({ value: e.target.value }, 'appointmentDate')}
+                  value={this.state.bookingData.appointmentDateTime || ''}
+                  onChange={(e) => this.handleChange({ value: e.target.value }, 'appointmentDateTime')}
                 />
               </SimpleItem>
 
