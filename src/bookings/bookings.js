@@ -1,4 +1,4 @@
-import React from "react";
+import { Component } from 'react';
 import DataGrid, {
     Column,
     Editing,
@@ -8,7 +8,7 @@ import DataGrid, {
 } from "devextreme-react/data-grid";
 import { Button } from "devextreme-react/button";
 
-export default class Bookings extends React.Component {
+export default class Bookings extends Component {
     state = {
         appointments: [],
         loading: true,
