@@ -1,6 +1,6 @@
 import { Component } from 'react';
-import Form, { GroupItem, SimpleItem, RequiredRule, DateBoxEditor } from 'devextreme-react/form';
-import { Navigate } from 'react-router-dom';
+import Form, { GroupItem, SimpleItem, RequiredRule } from 'devextreme-react/form';
+import { Popup } from 'devextreme-react/popup';
 import './appointment-booking.css';
 
 export default class BookingForm extends Component {
@@ -17,23 +17,20 @@ export default class BookingForm extends Component {
         reason: ''
       },
       submitting: false,
-      submitted: false
+      successPopupVisible: false
     };
-
-    this.onSubmit = this.onSubmit.bind(this);
-    this.handleChange = this.handleChange.bind(this);
   }
 
-  handleChange(e, field) {
-    this.setState(prevState => ({
+  handleChange = (e, field) => {
+    this.setState((prevState) => ({
       bookingData: {
         ...prevState.bookingData,
         [field]: e.value
       }
     }));
-  }
+  };
 
-  onSubmit() {
+  onSubmit = () => {
     this.setState({ submitting: true });
     const token = localStorage.getItem('token');
 
@@ -45,24 +42,33 @@ export default class BookingForm extends Component {
       },
       body: JSON.stringify(this.state.bookingData)
     })
-      .then(response => {
+      .then((response) => {
         if (!response.ok) throw new Error(response.status);
         return response.json();
       })
       .then(() => {
-        this.setState({ submitting: false, submitted: true });
+        this.setState({
+          submitting: false,
+          successPopupVisible: true,
+          bookingData: {
+            customerName: '',
+            customerEmail: '',
+            customerPhone: '',
+            branch: '',
+            appointmentDateTime: null,
+            reason: ''
+          }
+        });
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Booking failed:', error);
         alert('Failed to submit booking. Please try again.');
         this.setState({ submitting: false });
       });
-  }
+  };
 
   render() {
-    if (this.state.submitted) {
-      return <Navigate to="/bookings" replace />;
-    }
+    const { submitting, bookingData, successPopupVisible } = this.state;
 
     return (
       <div className="center-form">
@@ -77,7 +83,7 @@ export default class BookingForm extends Component {
                   type="text"
                   className="form-control"
                   placeholder="Branch"
-                  value={this.state.bookingData.branch}
+                  value={bookingData.branch}
                   onChange={(e) => this.handleChange({ value: e.target.value }, 'branch')}
                 />
               </SimpleItem>
@@ -88,7 +94,7 @@ export default class BookingForm extends Component {
                   type="text"
                   className="form-control"
                   placeholder="Enter customer name"
-                  value={this.state.bookingData.customerName}
+                  value={bookingData.customerName}
                   onChange={(e) => this.handleChange({ value: e.target.value }, 'customerName')}
                 />
               </SimpleItem>
@@ -99,7 +105,7 @@ export default class BookingForm extends Component {
                   type="text"
                   className="form-control"
                   placeholder="Enter customer email"
-                  value={this.state.bookingData.customerEmail}
+                  value={bookingData.customerEmail}
                   onChange={(e) => this.handleChange({ value: e.target.value }, 'customerEmail')}
                 />
               </SimpleItem>
@@ -110,7 +116,7 @@ export default class BookingForm extends Component {
                   type="text"
                   className="form-control"
                   placeholder="Enter customer phone"
-                  value={this.state.bookingData.customerPhone}
+                  value={bookingData.customerPhone}
                   onChange={(e) => this.handleChange({ value: e.target.value }, 'customerPhone')}
                 />
               </SimpleItem>
@@ -120,7 +126,7 @@ export default class BookingForm extends Component {
                 <input
                   type="datetime-local"
                   className="form-control"
-                  value={this.state.bookingData.appointmentDateTime || ''}
+                  value={bookingData.appointmentDateTime || ''}
                   onChange={(e) => this.handleChange({ value: e.target.value }, 'appointmentDateTime')}
                 />
               </SimpleItem>
@@ -131,7 +137,7 @@ export default class BookingForm extends Component {
                   type="text"
                   className="form-control"
                   placeholder="Reason"
-                  value={this.state.bookingData.reason}
+                  value={bookingData.reason}
                   onChange={(e) => this.handleChange({ value: e.target.value }, 'reason')}
                 />
               </SimpleItem>
@@ -141,10 +147,10 @@ export default class BookingForm extends Component {
               <SimpleItem
                 editorType="dxButton"
                 editorOptions={{
-                  text: this.state.submitting ? 'Submitting...' : 'Submit Booking',
+                  text: submitting ? 'Submitting...' : 'Submit Booking',
                   type: 'default',
                   useSubmitBehavior: true,
-                  disabled: this.state.submitting,
+                  disabled: submitting,
                   width: '100%',
                   onClick: this.onSubmit
                 }}
@@ -152,6 +158,29 @@ export default class BookingForm extends Component {
             </GroupItem>
           </Form>
         </div>
+
+        <Popup
+          visible={successPopupVisible}
+          onHiding={() => this.setState({ successPopupVisible: false })}
+          dragEnabled={false}
+          closeOnOutsideClick={true}
+          showTitle={true}
+          title="Booking Sent"
+          width={400}
+          height={250}
+        >
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <h4>Your booking has been sent!</h4>
+            <p>Please check your email for confirmation.</p>
+            <button
+              className="btn btn-primary"
+              style={{ marginTop: '20px' }}
+              onClick={() => this.setState({ successPopupVisible: false })}
+            >
+              OK
+            </button>
+          </div>
+        </Popup>
       </div>
     );
   }

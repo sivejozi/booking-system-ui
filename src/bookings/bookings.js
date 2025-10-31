@@ -3,7 +3,8 @@ import DataGrid, {
     Column,
     Editing,
     Paging,
-    Pager
+    Pager,
+    SearchPanel
 } from "devextreme-react/data-grid";
 import { Button } from "devextreme-react/button";
 
@@ -12,7 +13,8 @@ export default class Bookings extends React.Component {
         appointments: [],
         loading: true,
         error: null,
-        loggedIn: true
+        loggedIn: true,
+        pushEvent: true
     };
 
     componentDidMount() {
@@ -44,23 +46,21 @@ export default class Bookings extends React.Component {
         localStorage.removeItem("token");
         this.setState({ loggedIn: false });
         alert("Logged out successfully!");
-        window.location.href = "/login"; // redirect to your login page
+        window.location.href = "/login";
     };
 
     handleRowUpdate = (e) => {
         const token = localStorage.getItem("token");
         const updated = { ...e.oldData, ...e.newData };
-        console.log("Updating appointment:", updated);
+        const pushEvent = updated.pushEvent || false;
 
-        const url =
-            "http://localhost:8082/booking/api/appointments/update/" +
-            updated.id;
+        const url = `http://localhost:8082/booking/api/appointments/update/${updated.id}/${pushEvent}`;
 
         return fetch(url, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": "Bearer " + token
+                Authorization: "Bearer " + token
             },
             body: JSON.stringify(updated)
         })
@@ -107,6 +107,10 @@ export default class Bookings extends React.Component {
             });
     };
 
+    handlePushEventChange = (e) => {
+        this.setState({ pushEvent: e.value });
+    };
+
     render() {
         const { appointments, loading, error, loggedIn } = this.state;
 
@@ -116,7 +120,6 @@ export default class Bookings extends React.Component {
 
         return (
             <div style={{ margin: "30px" }}>
-                {/* Header bar */}
                 <div
                     style={{
                         display: "flex",
@@ -143,6 +146,8 @@ export default class Bookings extends React.Component {
                     onRowUpdating={this.handleRowUpdate}
                     onRowRemoving={this.handleRowRemove}
                 >
+                    <SearchPanel visible={true} highlightCaseSensitive={false} placeholder="Search appointments..." />
+
                     <Editing
                         mode="popup"
                         allowUpdating={true}
@@ -151,7 +156,7 @@ export default class Bookings extends React.Component {
                             title: "Edit Appointment",
                             showTitle: true,
                             width: 600,
-                            height: 450
+                            height: 500
                         }}
                         form={{
                             colCount: 2,
@@ -170,14 +175,13 @@ export default class Bookings extends React.Component {
                                     dataField: "status",
                                     editorType: "dxSelectBox",
                                     editorOptions: {
-                                        items: [
-                                            "CONFIRMED",
-                                            "CANCELLED",
-                                            "SCHEDULED",
-                                            "COMPLETED"
-                                        ],
-                                        value: "CONFIRMED"
+                                        items: ["CONFIRMED", "CANCELLED", "SCHEDULED", "COMPLETED"]
                                     }
+                                },
+                                {
+                                    dataField: "pushEvent",
+                                    label: { text: "Send Notification" },
+                                    editorType: "dxCheckBox"
                                 }
                             ]
                         }}
@@ -188,27 +192,15 @@ export default class Bookings extends React.Component {
                     <Column dataField="customerName" caption="Customer" />
                     <Column dataField="customerEmail" caption="Email" />
                     <Column dataField="customerPhone" caption="Phone" />
-                    <Column
-                        dataField="appointmentDateTime"
-                        caption="Date & Time"
-                        dataType="datetime"
-                    />
+                    <Column dataField="appointmentDateTime" caption="Date & Time" dataType="datetime" />
                     <Column dataField="reason" caption="Reason" />
-                    <Column
-                        dataField="status"
-                        caption="Status"
-                        lookup={{
-                            dataSource: ["CONFIRMED", "CANCELLED", "SCHEDULED", "COMPLETED"]
-                        }}
-                    />
+                    <Column dataField="status" caption="Status" />
+                    <Column dataField="pushEvent" visible={false} />
 
                     <Paging defaultPageSize={10} />
-                    <Pager
-                        showPageSizeSelector={true}
-                        allowedPageSizes={[5, 10, 20]}
-                        showInfo={true}
-                    />
+                    <Pager showPageSizeSelector={true} allowedPageSizes={[5, 10, 20]} showInfo={true} />
                 </DataGrid>
+
             </div>
         );
     }
